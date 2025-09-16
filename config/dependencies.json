@@ -1,0 +1,80 @@
+{
+    "python_packages": [
+        {
+            "name": "rich",
+            "version": ">=12.0.0",
+            "required": true,
+            "fallback": null
+        },
+        {
+            "name": "textual",
+            "version": ">=0.10.0",
+            "required": true,
+            "fallback": null
+        },
+        {
+            "name": "requests",
+            "version": ">=2.25.0",
+            "required": true,
+            "fallback": null
+        },
+        {
+            "name": "urllib3",
+            "version": ">=1.26.0",
+            "required": true,
+            "fallback": null
+        }
+    ],
+    "c2_frameworks": [
+        {
+            "name": "sliver",
+            "required": false,
+            "download_url": "https://github.com/BishopFox/sliver/releases/latest/download/sliver-client_linux",
+            "install_path": "sliver/sliver-client",
+            "fallback": "villain",
+            "check_command": "which sliver-server"
+        },
+        {
+            "name": "villain",
+            "required": false,
+            "download_url": "https://github.com/t3l3machus/Villain/archive/refs/heads/main.zip",
+            "install_path": "Villain",
+            "fallback": "hoaxshell",
+            "check_command": "test -d Villain"
+        },
+        {
+            "name": "hoaxshell",
+            "required": false,
+            "download_url": "https://github.com/t3l3machus/hoaxshell/archive/refs/heads/main.zip",
+            "install_path": "HoaxShell",
+            "fallback": null,
+            "check_command": "test -d HoaxShell"
+        }
+    ],
+    "system_tools": [
+        {
+            "name": "curl",
+            "required": true,
+            "install_command": "apt-get install -y curl",
+            "check_command": "which curl"
+        },
+        {
+            "name": "wget",
+            "required": true,
+            "install_command": "apt-get install -y wget",
+            "check_command": "which wget"
+        },
+        {
+            "name": "git",
+            "required": true,
+            "install_command": "apt-get install -y git",
+            "check_command": "which git"
+        },
+        {
+            "name": "nmap",
+            "required": false,
+            "install_command": "apt-get install -y nmap",
+            "check_command": "which nmap"
+        }
+    ]
+}
