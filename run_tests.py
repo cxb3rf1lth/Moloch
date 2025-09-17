@@ -18,9 +18,9 @@ def main():
     parser.add_argument("-c", "--c2", action="store_true", help="Test C2Manager component")
     parser.add_argument("-i", "--injector", action="store_true", help="Test Injector component")
     parser.add_argument("-v", "--vulnerability", action="store_true", help="Test VulnerabilityScanner component")
-    
+
     args = parser.parse_args()
-    
+
     # Run requested tests
     if args.all or not any([args.logger, args.payloads, args.c2, args.injector, args.vulnerability]):
         run_all_tests()

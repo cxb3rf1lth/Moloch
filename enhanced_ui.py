@@ -27,8 +27,8 @@ from textual.containers import Container, Horizontal, Vertical, Grid
 from textual.reactive import reactive
 from textual.widgets import (
     Header, Footer, Button, Static, Input, Label,
-    Select, Switch, DataTable, Tree, TabbedContent, 
-    TabPane, ListItem, ListView, Markdown, OptionList, 
+    Select, Switch, DataTable, Tree, TabbedContent,
+    TabPane, ListItem, ListView, Markdown, OptionList,
     ContentSwitcher, Log as TextLog
 )
 from textual.widget import Widget
@@ -280,11 +280,11 @@ Log {
 
 class StatusPanel(Static):
     """Enhanced status panel for RexPloit"""
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.status_items = {}
-        
+
     def compose(self) -> ComposeResult:
         """Compose status panel"""
         yield Static("RexPloit Status", id="sidebar-title")
@@ -294,17 +294,17 @@ class StatusPanel(Static):
         yield Static("", id="status-connections")
         yield Static("", id="status-targets")
         yield TextLog(id="status-log", highlight=True, markup=True)
-        
+
     def update_status(self, key, value, active=False):
         """Update status panel item"""
         self.status_items[key] = (value, active)
         self._refresh_status()
-        
+
     def log_status(self, message, level="INFO"):
         """Add message to status log"""
         log = self.query_one("#status-log")
         timestamp = time.strftime("%H:%M:%S")
-        
+
         if level == "INFO":
             log.write(f"[dim]{timestamp}[/dim] [blue]{message}[/blue]")
         elif level == "SUCCESS":
@@ -315,7 +315,7 @@ class StatusPanel(Static):
             log.write(f"[dim]{timestamp}[/dim] [red]{message}[/red]")
         else:
             log.write(f"[dim]{timestamp}[/dim] {message}")
-            
+
     def _refresh_status(self):
         """Refresh all status indicators"""
         for key, (value, active) in self.status_items.items():
@@ -332,7 +332,7 @@ class StatusPanel(Static):
 
 class MainContentArea(Container):
     """Main content area with multi-tab interface"""
-    
+
     def compose(self) -> ComposeResult:
         """Compose main content area"""
         with TabbedContent(id="main-tabs"):
@@ -342,7 +342,7 @@ class MainContentArea(Container):
                     yield Static("Statistics", classes="panel-header")
                     yield Static("Visualization", classes="panel-header")
                     yield Static("Recent Activity", classes="panel-header")
-            
+
             with TabPane("C2 Manager", id="tab-c2"):
                 yield Static("C2 Framework Management", classes="panel-header")
                 with Horizontal():
@@ -353,7 +353,7 @@ class MainContentArea(Container):
                         yield Button("Stop Framework", id="stop-framework", variant="danger")
                     with Vertical(id="c2-output", classes="panel"):
                         yield TextLog(id="c2-log", highlight=True, markup=True)
-            
+
             with TabPane("Payloads", id="tab-payloads"):
                 yield Static("Payload Generation", classes="panel-header")
                 with Horizontal():
@@ -376,14 +376,14 @@ class MainContentArea(Container):
                             yield Label("Listener Port:", classes="form-label")
                             yield Input(placeholder="4444", id="listener-port")
                             yield Label("Options:", classes="form-label")
-                            yield Switch(value=True, id="encode-payload") 
+                            yield Switch(value=True, id="encode-payload")
                             yield Label("Encode Payload", id="encode-label")
                             yield Switch(value=False, id="obfuscate-payload")
                             yield Label("Obfuscate Payload", id="obfuscate-label")
                             yield Button("Generate Payload", id="generate-payload", variant="primary")
                     with Vertical(id="payload-output", classes="panel"):
                         yield TextLog(id="payload-log", highlight=True, markup=True)
-            
+
             with TabPane("Injection", id="tab-injection"):
                 yield Static("Payload Injection", classes="panel-header")
                 with Horizontal():
@@ -396,7 +396,7 @@ class MainContentArea(Container):
                         yield Button("Inject Payloads", id="inject-payloads", variant="danger")
                     with Vertical(id="injection-results", classes="panel"):
                         yield TextLog(id="injection-log", highlight=True, markup=True)
-            
+
             with TabPane("Scanner", id="tab-scanner"):
                 yield Static("Vulnerability Scanner", classes="panel-header")
                 with Horizontal():
@@ -407,7 +407,7 @@ class MainContentArea(Container):
                         yield Button("Run Scan", id="run-scan", variant="danger")
                     with Vertical(id="scanner-results", classes="panel"):
                         yield TextLog(id="scanner-log", highlight=True, markup=True)
-            
+
             with TabPane("Reports", id="tab-reports"):
                 yield Static("Security Reports", classes="panel-header")
                 with Horizontal():
@@ -416,7 +416,7 @@ class MainContentArea(Container):
                         yield ListView(id="reports-listview")
                     with Vertical(id="report-content", classes="panel"):
                         yield TextLog(id="report-log", highlight=True, markup=True)
-                        
+
             with TabPane("Settings", id="tab-settings"):
                 yield Static("RexPloit Settings", classes="panel-header")
                 with Grid(id="settings-grid"):
@@ -432,7 +432,7 @@ class MainContentArea(Container):
                         yield Label("Listener Port:", classes="form-label")
                         yield Input(placeholder="4444", id="default-port")
                         yield Button("Save Settings", id="save-settings", variant="primary")
-                    
+
                     with Vertical(id="dependency-manager", classes="panel"):
                         yield Static("Dependency Manager", classes="panel-header")
                         yield Button("Check Dependencies", id="check-deps")
@@ -441,26 +441,26 @@ class MainContentArea(Container):
 
 class ToolsPanel(Static):
     """Tools panel for quick actions and tools"""
-    
+
     def compose(self) -> ComposeResult:
         """Compose tools panel"""
         yield Static("Quick Tools", id="sidebar-title")
-        
+
         with Container(classes="tool-card"):
             yield Static("Network Scanner", classes="tool-card-header")
             yield Button("Scan Local Network", id="quick-scan-network")
-            
+
         with Container(classes="tool-card"):
             yield Static("Payload Generator", classes="tool-card-header")
             yield Button("Quick Python Payload", id="quick-python-payload")
             yield Button("Quick PowerShell Payload", id="quick-ps-payload")
             yield Button("Quick Bash Payload", id="quick-bash-payload")
-            
+
         with Container(classes="tool-card"):
             yield Static("Listeners", classes="tool-card-header")
             yield Button("Quick Listener (4444)", id="quick-listener-4444")
             yield Button("Quick Listener (8080)", id="quick-listener-8080")
-            
+
         with Container(classes="tool-card"):
             yield Static("Utilities", classes="tool-card-header")
             yield Button("Check Target", id="quick-check-target")
@@ -468,9 +468,9 @@ class ToolsPanel(Static):
 
 class RexPloitEnhancedApp(App):
     """Enhanced RexPloit Application with Advanced UI"""
-    
+
     CSS = REXPLOIT_CSS
-    
+
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("d", "switch_tab('tab-dashboard')", "Dashboard"),
@@ -482,22 +482,22 @@ class RexPloitEnhancedApp(App):
         Binding("t", "switch_tab('tab-settings')", "Settings"),
         Binding("f1", "show_help", "Help")
     ]
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.targets = []
-        
+
     def compose(self) -> ComposeResult:
         """Compose the app layout"""
         yield Header()
-        
+
         with Horizontal():
             yield StatusPanel(id="status-panel")
             yield MainContentArea(id="main-content")
             yield ToolsPanel(id="tools-panel")
-            
+
         yield Footer()
-        
+
     def on_mount(self) -> None:
         """Handle app mount event"""
         # Set initial status
@@ -507,122 +507,122 @@ class RexPloitEnhancedApp(App):
         status_panel.update_status("payloads", "0 generated", active=False)
         status_panel.update_status("connections", "0 active", active=False)
         status_panel.update_status("targets", "0 defined", active=False)
-        
+
         # Log startup
         status_panel.log_status("RexPloit Enhanced UI initialized", "SUCCESS")
         status_panel.log_status("Ready for professional penetration testing operations", "INFO")
-        
+
     def action_switch_tab(self, tab_id: str) -> None:
         """Switch to specified tab"""
         try:
             tabs = self.query_one("#main-tabs")
             tabs.active = tab_id
-            
+
             # Log tab switch
             status_panel = self.query_one(StatusPanel)
             status_panel.log_status(f"Switched to {tab_id.replace('tab-', '').capitalize()}", "INFO")
         except NoMatches:
             pass
-            
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button press events"""
         button_id = event.button.id
         status_panel = self.query_one(StatusPanel)
-        
+
         # C2 Framework buttons
         if button_id == "start-sliver":
             status_panel.log_status("Starting Sliver C2 Framework...", "INFO")
             status_panel.update_status("c2", "Sliver running", active=True)
             self._simulate_c2_startup("Sliver")
-            
+
         elif button_id == "start-villain":
             status_panel.log_status("Starting Villain C2 Framework...", "INFO")
             status_panel.update_status("c2", "Villain running", active=True)
             self._simulate_c2_startup("Villain")
-            
+
         elif button_id == "start-hoaxshell":
             status_panel.log_status("Starting HoaxShell C2 Framework...", "INFO")
             status_panel.update_status("c2", "HoaxShell running", active=True)
             self._simulate_c2_startup("HoaxShell")
-            
+
         elif button_id == "stop-framework":
             status_panel.log_status("Stopping C2 Framework...", "INFO")
             status_panel.update_status("c2", "Not running", active=False)
             status_panel.update_status("listener", "Not running", active=False)
             self._log_to_area("c2-log", "[yellow]Framework stopped[/yellow]")
-            
+
         # Payload buttons
         elif button_id == "generate-payload":
             self._handle_payload_generation()
-            
+
         # Injection buttons
         elif button_id == "add-target-btn":
             self._add_target()
-            
+
         elif button_id == "inject-payloads":
             self._handle_payload_injection()
-            
+
         # Scanner buttons
         elif button_id == "run-scan":
             self._handle_vulnerability_scan()
-            
+
         # Settings buttons
         elif button_id == "save-settings":
             self._save_settings()
-            
+
         elif button_id == "check-deps":
             status_panel.log_status("Checking dependencies...", "INFO")
             self._simulate_dependency_check()
-            
+
         elif button_id == "install-deps":
             status_panel.log_status("Installing dependencies...", "INFO")
             self._simulate_dependency_installation()
-            
+
         # Quick tools buttons
         elif button_id == "quick-scan-network":
             status_panel.log_status("Running quick network scan...", "INFO")
             self._simulate_network_scan()
-            
+
         elif button_id == "quick-python-payload":
             self._generate_quick_payload("python_reverse_tcp")
-            
+
         elif button_id == "quick-ps-payload":
             self._generate_quick_payload("powershell_reverse_tcp")
-            
+
         elif button_id == "quick-bash-payload":
             self._generate_quick_payload("bash_reverse_tcp")
-            
+
         elif button_id == "quick-listener-4444":
             status_panel.log_status("Starting quick listener on port 4444...", "INFO")
             status_panel.update_status("listener", "Running on :4444", active=True)
             self._log_to_area("c2-log", "[green]Quick listener started on port 4444[/green]")
-            
+
     def _simulate_c2_startup(self, framework_name):
         """Simulate C2 framework startup with logs"""
         c2_log = self.query_one("#c2-log")
         c2_log.clear()
-        
+
         c2_log.write(f"[bold blue][{framework_name}][/bold blue] Initializing professional C2 framework...")
-        
+
         # Schedule startup messages
         def add_startup_message(delay, message):
             def _add_message():
                 c2_log.write(message)
             self.set_timer(delay, _add_message)
-        
+
         add_startup_message(0.5, f"[bold blue][{framework_name}][/bold blue] Checking dependencies...")
         add_startup_message(1.0, f"[bold blue][{framework_name}][/bold blue] Initializing server...")
         add_startup_message(1.5, f"[bold blue][{framework_name}][/bold blue] Starting listener...")
         add_startup_message(2.0, f"[bold green][{framework_name}][/bold green] Framework operational!")
-        
+
         # Update status after delay
         def update_listener_status():
             status_panel = self.query_one(StatusPanel)
             status_panel.update_status("listener", "Running on :4444", active=True)
             status_panel.log_status(f"{framework_name} C2 framework ready", "SUCCESS")
-            
+
         self.set_timer(2.5, update_listener_status)
-        
+
     def _handle_payload_generation(self):
         """Handle payload generation"""
         # Get input values
@@ -632,24 +632,24 @@ class RexPloitEnhancedApp(App):
             port = self.query_one("#listener-port").value or "4444"
             encode = self.query_one("#encode-payload").value
             obfuscate = self.query_one("#obfuscate-payload").value
-            
+
             # Log generation
             status_panel = self.query_one(StatusPanel)
             status_panel.log_status(f"Generating {payload_type} payload...", "INFO")
-            
+
             # Simulate payload generation
             payload_log = self.query_one("#payload-log")
             payload_log.clear()
-            
+
             payload_log.write(f"[bold blue]Generating {payload_type} payload[/bold blue]")
             payload_log.write(f"Host: {host}")
             payload_log.write(f"Port: {port}")
             payload_log.write(f"Encoding: {'Enabled' if encode else 'Disabled'}")
             payload_log.write(f"Obfuscation: {'Enabled' if obfuscate else 'Disabled'}")
-            
+
             # Generate example payload
             payload_content = self._generate_payload_content(payload_type, host, port)
-            
+
             # Update payload log
             def show_payload():
                 payload_name = f"rexploit_payload_{int(time.time())}"
@@ -659,19 +659,19 @@ class RexPloitEnhancedApp(App):
                 payload_log.write("")
                 payload_log.write("[bold]Payload Content:[/bold]")
                 payload_log.write(payload_content)
-                
+
                 # Update status
                 status_panel = self.query_one(StatusPanel)
                 current_payloads = int(status_panel.status_items.get("payloads", (0, False))[0].split()[0]) + 1
                 status_panel.update_status("payloads", f"{current_payloads} generated", active=True)
                 status_panel.log_status(f"Payload '{payload_name}' generated successfully", "SUCCESS")
-                
+
             self.set_timer(1.0, show_payload)
-            
+
         except Exception as e:
             status_panel = self.query_one(StatusPanel)
             status_panel.log_status(f"Error generating payload: {str(e)}", "ERROR")
-            
+
     def _generate_payload_content(self, payload_type, host, port):
         """Generate payload content based on type"""
         if payload_type == "python_reverse_tcp":
@@ -698,28 +698,28 @@ $stream.Flush()}};
 $client.Close()"""
         else:
             return f"# {payload_type} payload for {host}:{port}"
-            
+
     def _add_target(self):
         """Add target to the targets list"""
         target_input = self.query_one("#add-target")
         target_value = target_input.value.strip()
-        
+
         if target_value and target_value not in self.targets:
             self.targets.append(target_value)
             target_input.value = ""
-            
+
             # Update target list
             target_list = self.query_one("#target-list")
             target_list.clear()
-            
+
             for target in self.targets:
                 target_list.append(ListItem(target))
-                
+
             # Update status
             status_panel = self.query_one(StatusPanel)
             status_panel.update_status("targets", f"{len(self.targets)} defined", active=len(self.targets) > 0)
             status_panel.log_status(f"Added target: {target_value}", "INFO")
-            
+
     def _handle_payload_injection(self):
         """Handle payload injection to targets"""
         if not self.targets:
@@ -727,26 +727,26 @@ $client.Close()"""
             status_panel.log_status("No targets defined for injection", "ERROR")
             self._log_to_area("injection-log", "[bold red]Error: No targets defined[/bold red]")
             return
-            
+
         # Log injection start
         status_panel = self.query_one(StatusPanel)
         status_panel.log_status(f"Injecting payloads to {len(self.targets)} targets...", "INFO")
-        
+
         # Clear injection log
         injection_log = self.query_one("#injection-log")
         injection_log.clear()
-        
+
         # Show targets
         injection_log.write("[bold blue]Starting professional payload injection[/bold blue]")
         injection_log.write("Targets:")
         for target in self.targets:
             injection_log.write(f"  - {target}")
-        
+
         # Simulate injection process
         def simulate_injection():
             injection_log.write("")
             injection_log.write("[bold]Deploying payloads...[/bold]")
-            
+
             # Process each target
             for i, target in enumerate(self.targets):
                 # Add slight delay between targets
@@ -754,58 +754,58 @@ $client.Close()"""
                     # Simulate multiple injection vectors
                     vectors = ["command_injection", "file_upload", "sql_injection"]
                     results = []
-                    
+
                     for vector in vectors:
                         success = (target_idx + ord(vector[0])) % 5 != 0  # 80% success rate
                         status = "delivered" if success else "no_callback"
                         results.append((vector, status))
-                        
+
                     # Log results for this target
                     injection_log.write(f"\n[bold]Target: {target_url}[/bold]")
                     for vector, status in results:
                         color = "green" if status == "delivered" else "red"
                         injection_log.write(f"  Vector: {vector} - [{color}]{status}[/{color}]")
-                
+
                 self.set_timer(0.8 * i, lambda idx=i, url=target: process_target(idx, url))
-            
+
             # Final results after all targets processed
             def show_final_results():
                 injection_log.write("\n[bold green]Injection complete![/bold green]")
                 injection_log.write(f"Processed {len(self.targets)} targets")
                 injection_log.write("See detailed results above")
-                
+
                 # Update status
                 status_panel = self.query_one(StatusPanel)
                 status_panel.log_status("Payload injection completed", "SUCCESS")
-                
+
                 # Simulate some connections
                 self.set_timer(2.0, self._simulate_incoming_connection)
-                
+
             self.set_timer(0.8 * len(self.targets) + 0.5, show_final_results)
-            
+
         self.set_timer(1.0, simulate_injection)
-        
+
     def _handle_vulnerability_scan(self):
         """Handle vulnerability scanning"""
         scan_target = self.query_one("#scan-target").value
-        
+
         if not scan_target:
             self._log_to_area("scanner-log", "[bold red]Error: No target specified[/bold red]")
             return
-            
+
         # Log scan start
         status_panel = self.query_one(StatusPanel)
         status_panel.log_status(f"Scanning target: {scan_target}", "INFO")
-        
+
         # Clear scanner log
         scanner_log = self.query_one("#scanner-log")
         scanner_log.clear()
-        
+
         # Show scan start
         scanner_log.write(f"[bold blue]Starting professional vulnerability scan[/bold blue]")
         scanner_log.write(f"Target: {scan_target}")
         scanner_log.write("Initializing scanner...")
-        
+
         # Simulate scan process
         vulnerabilities = [
             ("Remote Code Execution", "Critical", 9.8),
@@ -814,153 +814,153 @@ $client.Close()"""
             ("File Inclusion", "High", 7.8),
             ("Command Injection", "Critical", 9.3)
         ]
-        
+
         def simulate_scan():
             scanner_log.write("\n[bold]Scanning for vulnerabilities...[/bold]")
-            
+
             # Process each vulnerability check
             for i, (vuln, severity, score) in enumerate(vulnerabilities):
                 # Add slight delay between checks
                 def check_vulnerability(v, s, c):
                     # Simulate detection with 60% success rate
                     detected = random.random() > 0.4
-                    
+
                     if detected:
                         color = "red" if s == "Critical" else "orange" if s == "High" else "yellow"
                         scanner_log.write(f"  [{color}]{s}[/{color}] {v} (CVSS: {c}) - DETECTED")
-                    
+
                 self.set_timer(0.8 * i, lambda vuln=vuln, sev=severity, score=score: check_vulnerability(vuln, sev, score))
-            
+
             # Final results after all checks
             def show_final_results():
                 scanner_log.write("\n[bold green]Scan complete![/bold green]")
                 scanner_log.write(f"Vulnerabilities found in {scan_target}")
-                
+
                 # Update status
                 status_panel = self.query_one(StatusPanel)
                 status_panel.log_status(f"Vulnerability scan of {scan_target} completed", "SUCCESS")
-                
+
             self.set_timer(0.8 * len(vulnerabilities) + 0.5, show_final_results)
-            
+
         self.set_timer(1.0, simulate_scan)
-        
+
     def _save_settings(self):
         """Save application settings"""
         try:
             default_c2 = self.query_one("#default-c2").value
             default_host = self.query_one("#default-host").value or "0.0.0.0"
             default_port = self.query_one("#default-port").value or "4444"
-            
+
             # Update status
             status_panel = self.query_one(StatusPanel)
             status_panel.log_status("Settings saved successfully", "SUCCESS")
-            
+
         except Exception as e:
             status_panel = self.query_one(StatusPanel)
             status_panel.log_status(f"Error saving settings: {str(e)}", "ERROR")
-            
+
     def _simulate_dependency_check(self):
         """Simulate dependency checking"""
         self._log_to_area("status-log", "[bold blue]Checking dependencies...[/bold blue]")
-        
+
         def check_packages():
             self._log_to_area("status-log", "✓ Python packages: All installed")
-            
+
         def check_c2():
             self._log_to_area("status-log", "✓ C2 frameworks: All installed")
-            
+
         def check_tools():
             self._log_to_area("status-log", "✓ System tools: All installed")
-            
+
         def check_complete():
             status_panel = self.query_one(StatusPanel)
             status_panel.log_status("All dependencies satisfied", "SUCCESS")
-            
+
         self.set_timer(0.5, check_packages)
         self.set_timer(1.0, check_c2)
         self.set_timer(1.5, check_tools)
         self.set_timer(2.0, check_complete)
-        
+
     def _simulate_dependency_installation(self):
         """Simulate dependency installation"""
         self._log_to_area("status-log", "[bold blue]Installing dependencies...[/bold blue]")
-        
+
         def install_packages():
             self._log_to_area("status-log", "✓ Installing Python packages...")
-            
+
         def install_c2():
             self._log_to_area("status-log", "✓ Installing C2 frameworks...")
-            
+
         def install_tools():
             self._log_to_area("status-log", "✓ Installing system tools...")
-            
+
         def install_complete():
             status_panel = self.query_one(StatusPanel)
             status_panel.log_status("All dependencies installed successfully", "SUCCESS")
-            
+
         self.set_timer(0.5, install_packages)
         self.set_timer(1.5, install_c2)
         self.set_timer(2.5, install_tools)
         self.set_timer(3.0, install_complete)
-        
+
     def _simulate_network_scan(self):
         """Simulate network scanning"""
         self._log_to_area("status-log", "[bold blue]Scanning local network...[/bold blue]")
-        
+
         def find_hosts():
             self._log_to_area("status-log", "Found 5 hosts on local network")
-            
+
         def port_scan():
             self._log_to_area("status-log", "Port scanning hosts...")
-            
+
         def service_detection():
             self._log_to_area("status-log", "Detecting services...")
-            
+
         def scan_complete():
             hosts = ["192.168.1.1 (Router)", "192.168.1.100", "192.168.1.101", "192.168.1.105", "192.168.1.110"]
             status_panel = self.query_one(StatusPanel)
             status_panel.log_status(f"Network scan complete, found {len(hosts)} hosts", "SUCCESS")
-            
+
             for host in hosts:
                 self._log_to_area("status-log", f"  - {host}")
-            
+
         self.set_timer(0.5, find_hosts)
         self.set_timer(1.0, port_scan)
         self.set_timer(2.0, service_detection)
         self.set_timer(2.5, scan_complete)
-        
+
     def _generate_quick_payload(self, payload_type):
         """Generate quick payload of specified type"""
         status_panel = self.query_one(StatusPanel)
         status_panel.log_status(f"Generating quick {payload_type}...", "INFO")
-        
+
         host = "0.0.0.0"
         port = "4444"
-        
+
         # Generate payload
         payload_content = self._generate_payload_content(payload_type, host, port)
         payload_name = f"quick_{payload_type}_{int(time.time())}"
-        
+
         # Log generation
         self._log_to_area("status-log", f"[green]Generated quick {payload_type} payload: {payload_name}[/green]")
-        
+
         # Update status
         current_payloads = int(status_panel.status_items.get("payloads", (0, False))[0].split()[0]) + 1
         status_panel.update_status("payloads", f"{current_payloads} generated", active=True)
-        
+
     def _simulate_incoming_connection(self):
         """Simulate incoming connection"""
         status_panel = self.query_one(StatusPanel)
-        
+
         # Update connection count
         current_connections = int(status_panel.status_items.get("connections", (0, False))[0].split()[0]) + 1
         status_panel.update_status("connections", f"{current_connections} active", active=True)
-        
+
         # Log connection
         source_ip = f"192.168.1.{random.randint(100, 200)}"
         status_panel.log_status(f"New connection from {source_ip}:49152", "SUCCESS")
         self._log_to_area("c2-log", f"[bold green][CONNECTION][/bold green] Established from {source_ip}:49152")
-        
+
     def _log_to_area(self, area_id, message):
         """Log message to specific area"""
         try:
