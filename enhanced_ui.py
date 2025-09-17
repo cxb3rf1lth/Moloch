@@ -66,22 +66,21 @@ Footer {
 #status-panel {
     background: #272736;
     border: tall #3d3d5c;
-    grid-column: 1;
-    grid-row: 1-4;
+    width: 1fr;
+    min-width: 20;
 }
 
 #main-content {
     background: #20203a;
     border: tall #3d3d5c;
-    grid-column: 2;
-    grid-row: 1-4;
+    width: 1fr;
 }
 
 #tools-panel {
     background: #272736;
     border: tall #3d3d5c;
-    grid-column: 3;
-    grid-row: 1-4;
+    width: 1fr;
+    min-width: 20;
 }
 
 /* Navigation sidebar */
@@ -293,7 +292,7 @@ class StatusPanel(Static):
         yield Static("", id="status-payloads")
         yield Static("", id="status-connections")
         yield Static("", id="status-targets")
-        yield TextLog(id="status-log", highlight=True, markup=True)
+        yield TextLog(id="status-log", highlight=True)
         
     def update_status(self, key, value, active=False):
         """Update status panel item"""
@@ -324,7 +323,8 @@ class StatusPanel(Static):
                 status_class = "status-active" if active else "status-inactive"
                 status_icon = "✓" if active else "✗"
                 widget.update(f"{key.capitalize()}: {status_icon} {value}")
-                widget.set_classes(remove=["status-active", "status-inactive"])
+                widget.remove_class("status-active")
+                widget.remove_class("status-inactive")
                 widget.add_class("status-indicator")
                 widget.add_class(status_class)
             except NoMatches:
@@ -350,9 +350,9 @@ class MainContentArea(Container):
                         yield Button("Start Sliver", id="start-sliver", variant="primary")
                         yield Button("Start Villain", id="start-villain", variant="primary")
                         yield Button("Start HoaxShell", id="start-hoaxshell", variant="primary")
-                        yield Button("Stop Framework", id="stop-framework", variant="danger")
+                        yield Button("Stop Framework", id="stop-framework", variant="error")
                     with Vertical(id="c2-output", classes="panel"):
-                        yield TextLog(id="c2-log", highlight=True, markup=True)
+                        yield TextLog(id="c2-log", highlight=True)
             
             with TabPane("Payloads", id="tab-payloads"):
                 yield Static("Payload Generation", classes="panel-header")
@@ -382,7 +382,7 @@ class MainContentArea(Container):
                             yield Label("Obfuscate Payload", id="obfuscate-label")
                             yield Button("Generate Payload", id="generate-payload", variant="primary")
                     with Vertical(id="payload-output", classes="panel"):
-                        yield TextLog(id="payload-log", highlight=True, markup=True)
+                        yield TextLog(id="payload-log", highlight=True)
             
             with TabPane("Injection", id="tab-injection"):
                 yield Static("Payload Injection", classes="panel-header")
@@ -393,9 +393,9 @@ class MainContentArea(Container):
                         yield Button("Add Target", id="add-target-btn")
                         yield Static("Target List:", classes="form-label")
                         yield ListView(id="target-list")
-                        yield Button("Inject Payloads", id="inject-payloads", variant="danger")
+                        yield Button("Inject Payloads", id="inject-payloads", variant="error")
                     with Vertical(id="injection-results", classes="panel"):
-                        yield TextLog(id="injection-log", highlight=True, markup=True)
+                        yield TextLog(id="injection-log", highlight=True)
             
             with TabPane("Scanner", id="tab-scanner"):
                 yield Static("Vulnerability Scanner", classes="panel-header")
@@ -404,9 +404,9 @@ class MainContentArea(Container):
                         yield Static("Scan Options", classes="panel-header")
                         yield Label("Target:", classes="form-label")
                         yield Input(placeholder="https://example.com", id="scan-target")
-                        yield Button("Run Scan", id="run-scan", variant="danger")
+                        yield Button("Run Scan", id="run-scan", variant="error")
                     with Vertical(id="scanner-results", classes="panel"):
-                        yield TextLog(id="scanner-log", highlight=True, markup=True)
+                        yield TextLog(id="scanner-log", highlight=True)
             
             with TabPane("Reports", id="tab-reports"):
                 yield Static("Security Reports", classes="panel-header")
@@ -415,7 +415,7 @@ class MainContentArea(Container):
                         yield Static("Available Reports", classes="panel-header")
                         yield ListView(id="reports-listview")
                     with Vertical(id="report-content", classes="panel"):
-                        yield TextLog(id="report-log", highlight=True, markup=True)
+                        yield TextLog(id="report-log", highlight=True)
                         
             with TabPane("Settings", id="tab-settings"):
                 yield Static("RexPloit Settings", classes="panel-header")
