@@ -79,8 +79,19 @@ payloads/*.txt
 payloads/*.sh
 payloads/*.ps1
 payloads/*.py
+payloads/*.meta
+reports/*.html
+reports/*.pdf
+reports/*.json
+reports/*.csv
 temp/
 tmp/
+
+# Removed UI files (converted to CLI)
+enhanced_ui.py
+enhanced_ui_backup.py
+launcher.py
+rexploit_tui_backup.py
 
 # Exclude sensitive C2 framework content but allow directories
 c2_frameworks/*/logs/
@@ -94,3 +105,8 @@ config/secrets.json
 # Test artifacts
 test_payloads/
 test_logs/
+scan_results_*.json
+rexploit_report_*.html
+rexploit_report_*.pdf
+rexploit_report_*.json
+rexploit_report_*.csv

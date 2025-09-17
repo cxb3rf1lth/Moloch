@@ -4,43 +4,56 @@
   <img src="https://img.shields.io/badge/Version-2.0.0%20(Cerberus)-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.8%2B-brightgreen.svg" alt="Python">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
-  <img src="https://img.shields.io/badge/Status-Beta-orange.svg" alt="Status">
+  <img src="https://img.shields.io/badge/Interface-CLI-green.svg" alt="Interface">
   <br>
   <strong>FOR AUTHORIZED SECURITY TESTING ONLY</strong>
 </div>
 
 ## 🔒 Overview
 
-RexPloit is a comprehensive penetration testing framework designed for security professionals conducting authorized assessments. Built with a rich terminal user interface, it integrates multiple Command & Control frameworks, advanced payload generation, and vulnerability scanning capabilities.
+RexPloit is a comprehensive penetration testing framework designed for security professionals conducting authorized assessments. Built with a professional command-line interface, it integrates multiple Command & Control frameworks, advanced payload generation, and vulnerability scanning capabilities.
 
 > ⚠️ **IMPORTANT**: This tool is for professional security testing only. Only use on systems you have explicit permission to test.
 
-![RexPloit Screenshot](https://via.placeholder.com/800x450?text=RexPloit+Dashboard)
-
 ## 🌟 Key Features
 
-- **Enhanced Terminal UI**: Premium three-panel interface with improved layout and navigation
+- **Professional CLI Interface**: Advanced command-line interface with subcommands and interactive mode
 - **Multi-C2 Integration**: Supports Sliver, Villain, and HoaxShell frameworks
 - **Advanced Payload Generation**: Create customized payloads with encoding/obfuscation
 - **Secure Injection**: Deploy payloads via multiple vectors with comprehensive logging
 - **Vulnerability Scanning**: Identify security issues with severity scoring
-- **Detailed Reporting**: Generate professional assessment reports
-- **Dual Interface Options**: Choose between Enhanced and Original UI experiences
+- **Detailed Reporting**: Generate professional assessment reports in multiple formats
+- **Interactive Mode**: Full-featured interactive shell for advanced operations
+- **Comprehensive Help**: Built-in help system with examples and usage guides
 
-## 🎨 Interface Options
+## 🎨 Interface Modes
 
-### Enhanced UI (Recommended)
-- **Three-panel layout**: Status Panel | Main Content | Quick Tools
-- **Tabbed navigation**: Dashboard, C2 Manager, Payloads, Injection, Scanner
-- **Real-time status indicators**: Color-coded active/inactive states
-- **Quick action buttons**: One-click common operations
-- **Professional styling**: Modern dark theme with clean borders
+### Command-Line Mode (Default)
+```bash
+# Generate payloads
+rexploit payload --type python --lhost 192.168.1.100 --lport 4444
 
-### Original UI
-- **Classic interface**: Traditional single-panel layout
-- **Sidebar navigation**: Button-based menu system
-- **Activity logging**: Centralized log display
-- **Familiar workflow**: Standard penetration testing operations
+# Manage C2 frameworks  
+rexploit c2 --framework sliver --start
+
+# Perform security scans
+rexploit scan --target 192.168.1.0/24 --type vuln
+
+# Generate reports
+rexploit report --format html --output /tmp/report.html
+```
+
+### Interactive Mode
+```bash
+# Launch interactive shell
+rexploit --interactive
+
+# Then use commands like:
+rexploit> payload python 192.168.1.100 4444
+rexploit> c2 start sliver
+rexploit> scan vuln 192.168.1.100
+rexploit> help
+```
 
 ## 📋 Requirements
 
@@ -63,35 +76,37 @@ RexPloit is a comprehensive penetration testing framework designed for security 
 git clone https://github.com/cxb3rf1lth/Moloch.git
 cd Moloch
 pip3 install -r requirements.txt
-python3 launcher.py
+./rexploit --help
 ```
 
-### Interface Selection
-
-The launcher will present you with interface options:
-
-1. **Enhanced UI** - Modern three-panel interface (recommended)
-2. **Original UI** - Classic interface  
-3. **Exit**
-
-### Manual Launch
-
-To launch specific interfaces directly:
+### Basic Usage
 
 ```bash
-# Enhanced UI
-python3 enhanced_ui.py
+# View all available commands
+./rexploit --help
 
-# Original UI  
-python3 rexploit.py
+# Generate a Python reverse shell payload
+./rexploit payload --type python --lhost 192.168.1.100 --lport 4444
+
+# Start Sliver C2 framework
+./rexploit c2 --framework sliver --start
+
+# Perform vulnerability scan
+./rexploit scan --target 192.168.1.100 --type vuln
+
+# Generate HTML report
+./rexploit report --format html
+
+# Enter interactive mode
+./rexploit --interactive
 ```
 
-### Automatic Installation
+### Automatic Dependency Installation
 
 ```bash
 git clone https://github.com/cxb3rf1lth/Moloch.git
 cd Moloch
-python3 rexploit.py --install
+python3 unified_rexploit.py --install
 ```
 
 ### Manual Installation
