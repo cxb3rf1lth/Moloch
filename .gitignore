@@ -79,9 +79,13 @@ payloads/*.txt
 payloads/*.sh
 payloads/*.ps1
 payloads/*.py
-c2_frameworks/
 temp/
 tmp/
+
+# Exclude sensitive C2 framework content but allow directories
+c2_frameworks/*/logs/
+c2_frameworks/*/data/
+c2_frameworks/*/secrets/
 
 # Config files with sensitive data
 config/rexploit_config.json
