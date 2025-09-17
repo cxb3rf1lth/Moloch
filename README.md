@@ -19,12 +19,28 @@ RexPloit is a comprehensive penetration testing framework designed for security 
 
 ## 🌟 Key Features
 
-- **Rich Terminal UI**: Interactive console interface built with Textual/Rich
+- **Enhanced Terminal UI**: Premium three-panel interface with improved layout and navigation
 - **Multi-C2 Integration**: Supports Sliver, Villain, and HoaxShell frameworks
 - **Advanced Payload Generation**: Create customized payloads with encoding/obfuscation
 - **Secure Injection**: Deploy payloads via multiple vectors with comprehensive logging
 - **Vulnerability Scanning**: Identify security issues with severity scoring
 - **Detailed Reporting**: Generate professional assessment reports
+- **Dual Interface Options**: Choose between Enhanced and Original UI experiences
+
+## 🎨 Interface Options
+
+### Enhanced UI (Recommended)
+- **Three-panel layout**: Status Panel | Main Content | Quick Tools
+- **Tabbed navigation**: Dashboard, C2 Manager, Payloads, Injection, Scanner
+- **Real-time status indicators**: Color-coded active/inactive states
+- **Quick action buttons**: One-click common operations
+- **Professional styling**: Modern dark theme with clean borders
+
+### Original UI
+- **Classic interface**: Traditional single-panel layout
+- **Sidebar navigation**: Button-based menu system
+- **Activity logging**: Centralized log display
+- **Familiar workflow**: Standard penetration testing operations
 
 ## 📋 Requirements
 
@@ -39,7 +55,36 @@ RexPloit is a comprehensive penetration testing framework designed for security 
   - Villain: [t3l3machus/Villain](https://github.com/t3l3machus/Villain)
   - HoaxShell: [t3l3machus/hoaxshell](https://github.com/t3l3machus/hoaxshell)
 
-## 🚀 Installation
+## 🚀 Installation & Usage
+
+### Quick Start
+
+```bash
+git clone https://github.com/cxb3rf1lth/Moloch.git
+cd Moloch
+pip3 install -r requirements.txt
+python3 launcher.py
+```
+
+### Interface Selection
+
+The launcher will present you with interface options:
+
+1. **Enhanced UI** - Modern three-panel interface (recommended)
+2. **Original UI** - Classic interface  
+3. **Exit**
+
+### Manual Launch
+
+To launch specific interfaces directly:
+
+```bash
+# Enhanced UI
+python3 enhanced_ui.py
+
+# Original UI  
+python3 rexploit.py
+```
 
 ### Automatic Installation
 
