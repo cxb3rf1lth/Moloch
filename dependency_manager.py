@@ -63,7 +63,7 @@ class DependencyManager:
                     "download_url": "https://github.com/BishopFox/sliver/releases/latest/download/sliver-client_linux",
                     "install_path": "sliver/sliver-client",
                     "fallback": "villain",
-                    "check_command": "which sliver-server"
+                    "check_command": "test -f c2_frameworks/sliver/sliver-server"
                 },
                 {
                     "name": "villain",
@@ -71,7 +71,7 @@ class DependencyManager:
                     "download_url": "https://github.com/t3l3machus/Villain/archive/refs/heads/main.zip",
                     "install_path": "Villain",
                     "fallback": "hoaxshell",
-                    "check_command": "test -d Villain"
+                    "check_command": "test -d c2_frameworks/Villain"
                 },
                 {
                     "name": "hoaxshell",
@@ -79,7 +79,7 @@ class DependencyManager:
                     "download_url": "https://github.com/t3l3machus/hoaxshell/archive/refs/heads/main.zip",
                     "install_path": "HoaxShell",
                     "fallback": None,
-                    "check_command": "test -d HoaxShell"
+                    "check_command": "test -d c2_frameworks/HoaxShell"
                 }
             ],
             "system_tools": [
