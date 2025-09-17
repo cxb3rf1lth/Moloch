@@ -5,15 +5,10 @@ RexPloit - Advanced TUI Interface Enhancement
 Provides improved UI components and navigation for the RexPloit framework
 """
 
-import os
-import sys
 import time
-import asyncio
-from typing import List, Dict, Any, Optional
+from typing import List, Dict
 
 # Rich and Textual for advanced TUI
-from rich.console import Console
-from rich.panel import Panel
 from rich.text import Text
 from rich.table import Table
 from rich.layout import Layout
