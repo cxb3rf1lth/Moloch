@@ -1,0 +1,7 @@
+{
+  "injection_vector": "sql_injection",
+  "payload_id": 1,
+  "created": "2025-09-18T21:17:00.231345",
+  "payload": "' OR '1'='1",
+  "checksum": "eaec06bf3a1b96664dcf224b93180d1f53774de2b1839040fa83e7421f09ee08"
+}

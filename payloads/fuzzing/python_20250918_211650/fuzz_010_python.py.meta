@@ -1,0 +1,9 @@
+{
+  "base_payload": "payloads/payload_python_20250918_211650.py",
+  "variant_id": 10,
+  "mutations_applied": [
+    "encoding_mutation"
+  ],
+  "timestamp": "2025-09-18T21:16:50.766103",
+  "checksum": "cd7fa0d51b057c01b82ad24392167823925f46ec445a1035606e3d0b29ab6d12"
+}

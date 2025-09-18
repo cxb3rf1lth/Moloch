@@ -1,0 +1,9 @@
+{
+  "base_payload": "payloads/payload_python_20250918_211650.py",
+  "variant_id": 7,
+  "mutations_applied": [
+    "obfuscation_mutation"
+  ],
+  "timestamp": "2025-09-18T21:16:50.765974",
+  "checksum": "073cb1a83ce0376a896178f1c94b34b4170e06906b21919ff339a7b01e372bcf"
+}
